@@ -1,0 +1,24 @@
+{
+  "name": "graft",
+  "version": "0.0.0",
+  "description": "Graph like database interface",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha tests/index.js --reporter spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jinger89/graft.git"
+  },
+  "keywords": [
+    "graph",
+    "database",
+    "mysql"
+  ],
+  "author": "Jing Tao Liu",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jinger89/graft/issues"
+  },
+  "homepage": "https://github.com/jinger89/graft"
+}
