@@ -25,7 +25,7 @@ For example, using (Foo) as the reference point [comes_before] is a downstream r
 
 Nodes can be said to be upstream and downstream to each other, but this should be used with a relationship as a reference point. For example, using (Foo) and [comes_before] as the reference point, (Bar) is downstream to (Foo). But using (Foo) and [comes_after] as the reference point, (Bar) is now upstream to (Foo).
 
-## grafite
+## grafite object
 
 ### create(properties, callback)
 
@@ -108,7 +108,7 @@ Must be chained to `grafite.find` or `grafite.traverse`. Sorts given dataset by 
 - `[ null, null, null, -1 ]` - Sort in reverse
 - `[ 1, 'key', 1, -1 ]` - Combined, sort by upstream relationship, values of given key, downstream relationship, and reserved
 
-## Node
+## node object
 
 ```
 {
@@ -199,7 +199,3 @@ Must be chained to `node.traverse`. See `grafite.sort` for more information.
 #### Arguments
 - `order` - See `grafite.sort` for information on order queries.
 - `callback(error, nodes)` - Required, returns an array of nodes.
-
----
-
-## Database Interface
