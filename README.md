@@ -1,178 +1,263 @@
 # Grafite
 
-An experiment in creating a graph-like database using MySQL and Redis.
+Graph-like database interface using Javascript, MySQL, and Mongo.
 
-## Node Object
+- <a href="#goals">Basic Goals</a>
+- <a href="#objects">Library Objects</a>
+    - <a href="#objects-grafte">grafite</a>
+    - <a href="#objects-grafiteQuery">grafiteQuery</a>
+    - <a href="#objects-nodeObject">nodeObject</a>
+    - <a href="#objects-queryObject">queryObject</a>
+    - <a href="#objects-orderObject">orderObject</a>
+- <a href="#man">Manipulate Nodes</a>
+- <a href="#rel">Node Relationships</a>
+- <a href="#query">Querying and Traversing Nodes</a>
+- <a href="#node">nodeObject Methods</a>
+
+
+
+<h2 id="goals">Basic Goals</h2>
+
+1. Create and manipulate objects
+    - Create
+    - Update
+    - Delete
+2. Relate objects to each other
+    - Have multiple relationships
+    - Remove object relationships
+3. Query for objects
+    - By object property
+    - By relationship
+4. Traverse from object to object
+    - By object property
+    - By relationship
+
+
+
+<h2 id="objects">Library Objects</h2>
+
+
+<h3 id="objects-grafite">grafite</h3>
+
+The main interface for the library. Read the rest of this documentation for more information.
+
+
+<h3 id="objects-grafiteQuery">grafiteQuery</h3>
+
+Returned by functions that query and traverse nodes:
+
+- <a href="#man-find">grafite.find</a>
+- <a href="#query-traverse">grafiteQuery.traverse</a>
+- <a href="#query-sort">grafiteQuery.sort</a>
+- <a href="#node-traverse">nodeObject.traverse</a>
+
+Has two available methods:
+
+- <a href="#node-traverse">traverse</a>
+- <a href="#nde-sort">sort</a>
+
+
+<h3 id="objects-nodeObject">nodeObject</h3>
+
+Results from functions that create, manipulate, and find nodes:
+
+- <a href="#man-create">grafite.create</a>
+- <a href="#man-get">grafite.get</a>
+- <a href="#man-update">grafite.update</a>
+- <a href="#man-find">grafite.find</a>
+- <a href="#query-traverse">grafiteQuery.traverse</a>
+- <a href="#query.sort">grafiteQuery.sort</a>
+- <a href="#node-traverse">nodeObject.traverse</a>
+
+Available methods:
+
+- <a href="#node-traverse">traverse</a>
+- <a href="#node-update">update</a>
+- <a href="#node-delete">delete</a>
+- <a href="#node-relateTo">relateTo</a>
+- <a href="#node-relatedTo">relatedTo</a>
+- <a href="#node-unrelateFrom">unrelateFrom</a>
+- <a href="#node-severFrom">severFrom</a>
+
+
+<h3 id="objects-queryObject">queryObject</h3>
+
+An array with 3 elements used to query and traverse for nodes.
 
 ```
-{
-    id: '',
-    created: 0,
-    updated: 0,
-    data: {
-        ...
-    },
-    related: [
-        ...
-    ]
-}
+[
+    upstream,
+    query object,
+    downstream
+]
 ```
 
-- `id` - This node's unique ID, a string.
-- `created` - Millisecond timestamp of when the node was created (UTC).
-- `updated` - Millisecond timestamp of when the node was last updated (UTC).
-- `data` - Object containing this node's properties
-- `related` - Array of elements describing related nodes. Each element is an array: `[ upstream, id, downstream ]`. Upstream and downstream are relationships that can either be `null` if there is no relationship in that direction, a `string` for a single relationship, or an `array` of strings for multiple relationships. `id` is the ID of the related node.
+- `upstream` a string or an array of strings that define the upstream relationships to look for
+- `query object` and object in the style of [MongoDB find object](http://docs.mongodb.org/manual/tutorial/query-documents/)
+- `downstream` a string or an array of strings that define the downstream relationships to look for
 
----
+Use `null` call be used for any 3 of these elements, indicating not to query on that field.
 
-## grafite.create(properties, callback)
 
-Create a node with given properties. See `node` section for documentation of node methods.
+<h3 id="objects-orderObject">orderObject</h3>
 
-### Arguments
-- `properties` - Object of key-value pairs.
-- `callback(error, node)` - Returns the created node.
+A plain object with a key-value pairs. Where the key is the field to sort on, and the value is either `1` for ascending order (defualt), or `0` or `-1` for descending order.
 
----
 
-## grafite.get(id, callback)
 
-Gets a node with given node ID.
+<h2 id="man">Manipulate Nodes</h2>
 
-### Arguments
-- `id` - The ID of the node to get.
-- `callback(error, node)` - Returns a node, `null` if not found.
 
----
+<h3 id="man-create">grafite.create(data, callback);</h3>
 
-## grafite.related(a, b, [threshold = 5], callback)
+Create a node.
 
-Checks if this node A is related to node B. This method will attempt to establish the shortest possible path from node A to node B using **downstream relationships only**. If path length exceeds threshold before a complete relationship is found, then it will fail. Higher threshold will increase query time and decrease performance as more nodes are being searched.
+- `data` an object
+- `callback(error, nodeObject)`
 
-### Arguments
-- `a` - A node object, or node ID to be related to.
-- `b` - A node object, or node ID to be related to.
-- `callback(error, related, path)`
-    - `related` - True if related, false if not related or threshold is reached before relationship is found.
-    - `path` - Empty array if no relationship, If there is an relationship, an array of alternating nodes and relationships that outline the path between the two nodes. It will always start with node A and end with the node B. Example ` [ nodeA, 'downstream', someNode, 'downstream', nodeB ]`.
 
----
+<h3 id="man-get">grafite.get(node, callback);</h3>
 
-## grafite.find(query, ..., [callback])
+Get a node.
 
-Scan the database for nodes based on given queries. Queries are joined by OR.
+- `node` nodeID or nodeObject
+- `callback(error, nodeObject)`
 
-### Arguments
-- `query` - One or more search queries.
-- `callback(error, nodes)` - Returns an array of nodes. If omitted, defers query execution and return until last method in chain.
 
-### Search Query Examples
-- `[ null, { key: 'value' }, null ]` - Find node with property
-- `[ 'up', null, null ]` - Find node with upstream relationship
-- `[ null, null, 'down' ]` - Find node with downstream relationship
-- `[ ['up' ,'up'], null, null ]` - Find node with any upstream relationship
-- `[ null, null, ['down', 'down'] ]` - Find node with any downstream relationship
+<h3 id="man-update">grafite.update(node, data, callback);</h3>
 
----
+Update a node's data.
 
-## grafite.traverse(query, ..., [callback])
+- `node` nodeID or nodeObject
+- `data` an object, parameters with undefined values are removed
+- `callback(error, nodeObject)`
 
-Must be chained to `grafite.find`. Find nodes related to dataset based on queries. Queries within a traversal are joined by OR.
 
-### Arguments
-- `query` - One or more traversal queries to narrow down related nodes.
-- `callback(error, nodes)` - Returns an array of nodes. If omitted, defers query execution and return until last method in chain.
+<h3 id="man-delete">grafite.delete(node, callback);</h3>
 
-### Traversal Query Examples
-- `[ null, { key: 'value' }, null ]` - Find node with property up or downstream
-- `[ 'up', null, null ]` - Find upstream node related by 'up'
-- `[ null, null, 'down' ]` - Find downstream node related by 'down'
+Delete a node and node's relationships.
 
----
-
-## grafite.sort(order, ..., callback)
-
-Must be chained to `grafite.find` or `grafite.traverse`. Sorts given dataset by order queries. Queries are ran in the order then are given.
-
-### Arguments
-- `order` - One or more order query.
-- `callback(error, nodes)` - Required, returns an array of nodes.
-
-### Order Query Examples
-- `[ null, 'key', null ]` - Sort by values of given key
-- `[ null, [ 'key1', 'key2'] , null ]` - Sort by values of given keys
-- `[ 1, null, null ]` - Sort by upstream relationships
-- `[ null, null, 1 ]` - Sort by downstream relationships
-- `[ null, null, null, -1 ]` - Sort in reverse
-- `[ 1, 'key', 1, -1 ]` - Combined, sort by upstream relationship, values of given key, downstream relationship, and reserved
-
----
-
-## node.update(properties, callback)
-
-Updates this node. Setting value to `undefined` removes that property.
-
-### Arguments
-- `properties` - An object of key-value pairs. If value is `undefined` that key will be removed.
+- `node` nodeID or nodeObject
 - `callback(error)`
 
----
 
-## node.remove(callback)
 
-Removes this node. Also removes all attached relationships.
+<h2 id="rel">Node Relationships</h2>
 
-### Arguments
+
+<h3 id="rel-relate">grafite.relate(upstreamNode, relationship, downstreamNode, callback);</h3>
+
+Relate upstream node to downstream node with one or more relationships.
+
+- `upstreamNode` nodeID or nodeObject
+- `relationship` single relationship or an array an relationships
+- `downstreamNode` nodeID or nodeObject
 - `callback(error)`
 
----
 
-## node.exists(callback)
+<h3 id="rel-unrelate">grafite.unrelate(upstreamNode, relationship, downstreamNode, callback);</h3>
 
-Checks if this node still exists.
+Remove one or more relationships from upstream node to downstream node.
 
-### Arguments
-- `callback(error, exists)` - Returns true or false.
-
----
-
-## node.relate(downstream, node, callback)
-
-Relates this node to given node with given downstream relationship. More than one relationship can be specified.
-
-### Arguments
-- `downstream` - The downstream relationship to given node.
-- `node` - A node object, or node ID to be related to.
+- `upstreamNode` nodeID or nodeObject
+- `relationship` single relationship or an array of relationships
+- `downstreamNode` nodeID or nodeObject
 - `callback(error)`
 
----
 
-## node.unrelate([downstream], node, callback)
+<h3 id="rel-unrelate">grafite.unrelate(upstreamNode, downstreamNode, callback);</h3>
 
-Removes all downstream relationships from this node to given node. If downstream relationship is given, only that relationship is removed.
+Remove all relationships from upstream node to downstream node.
 
-### Arguments
-- `downstream` - The downstream relationship to given node.
-- `node` - A node object, or node ID to be related to.
+- `upstreamNode` nodeID or nodeObject
+- `downstreamNode` nodeID or nodeObject
 - `callback(error)`
 
----
 
-## node.traverse(query, ..., callback)
+<h3 id="rel-sever">grafite.sever(node, node, callback);</h3>
 
-Traverse from this node. See `grafite.traverse` for more information.
+Remove all relationships between both nodes.
 
-### Arguments
-- `query` - See `grafite.traverse` for information on traversal queries.
-- `callback(error, nodes)` - Returns an array of nodes. If omitted, defers query execution and return until last method in chain.
+- `node` nodeID or nodeObject
+- `node` nodeID or nodeObject
+- `callback(error)`
 
----
 
-## node.sort(order, ..., callback)
+<h3 id="rel-related">grafite.related(upstreamNode, downstreamNode, [threshold], callback);</h3>
 
-Must be chained to `node.traverse`. See `grafite.sort` for more information.
+Check if upstream node is related to downstream node, stopping at `threshold` number of jumps.
 
-### Arguments
-- `order` - See `grafite.sort` for information on order queries.
-- `callback(error, nodes)` - Required, returns an array of nodes.
+- `upstreamNode` nodeID or nodeObject
+- `downstreamNode` nodeID or nodeObject
+- `threshold` optional, defaults to 5, maximum number of steps to check
+- `callback(error, related)`
+
+
+<h3 id="rel-related">grafite.related(upstreamNode, relationship, downstreamNode, callback);</h3>
+
+Check if upstream node is immediately related to downstream node by one or more relationships.
+
+- `upstreamNode` nodeID or nodeObject
+- `relationship` single relationship or an array of relationships
+- `downstreamNode` nodeID or nodeObject
+- `callback(error, related)`
+
+
+
+<h2 id="query">Querying and Traversing Nodes</h2>
+
+
+<h3 id="query-find">grafite.find(query, [...], [callback]);</h3>
+
+Find a node with given queries. Additional queries are OR conditions. Returns a [grafiteQuery](#objects-queryObject) object.
+
+- `query` [queryObject](#objects-queryObject), one or more can be used
+- `callback(error, nodes)` optional, if not provided query will not be executed
+
+
+<h3 id="query-traverse">grafiteQuery.traverse(query, [...], [callback]);</h3>
+
+Traverse to related nodes from a query. Must be used as a chained function from [grafite.find](#query-find) or [grafiteQuery.traverse](#query-traverse). Additional queries are OR conditions.
+
+- `query` [queryObject](#objects-queryObject), one or more can be used
+- `callback(error, nodes)` optional, if not provided query will not be executed
+
+
+<h3 id="query-sort">grafiteQuery.sort(order, callback);</h3>
+
+Sort the results of a query. Callback is required
+
+- `order` [orderObject](#objects-orderObject), one or more can be used
+- `callback(error, nodes)` required, must be provided
+
+
+
+<h2 id="node">nodeObject Methods</h2>
+
+Most of these are self explanatory. Look at their corresponding grafite methods to understand what they do.
+
+<h4 id="node-traverse">nodeObject.traverse(query, [...], [callback]);</h4>
+
+<h4 id="node-update">nodeObject.update(data, callback)</h4>
+
+
+<h4 id="node-delete">nodeObject.delete()</h4>
+
+
+<h4 id="node-relateTo">nodeObject.relateTo(relationship,
+downstreamNode, callback)</h4>
+
+
+<h4 id="node-relatedTo">nodeObject.relatedTo(downstreamNode, callback)</h4>
+
+
+<h4 id="node-relatedTo">nodeObject.relatedTo(relationship, downstreamNode, callback)</h4>
+
+
+<h4 id="node-unrelateFrom">nodeObject.unrelateFrom(relationship, downstreamNode, callback)</h4>
+
+
+<h4 id="node-unrelateFrom">nodeObject.unrelateFrom(downstreamNode, callback)</h4>
+
+
+<h4 id="node-severFrom">nodeObject.severFrom(node, callback)</h4>

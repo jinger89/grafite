@@ -1,8 +1,8 @@
 {
   "name": "grafite",
-  "version": "0.0.0",
-  "description": "Experiment in graph-like database using MySQL",
-  "main": "index.js",
+  "version": "0.1.0",
+  "description": "Graph-like database interface using Javascript, MySQL, and Mongo.",
+  "main": "src/grafite.js",
   "scripts": {
     "test": "mocha tests/index.js --reporter spec"
   },
@@ -13,7 +13,8 @@
   "keywords": [
     "graph",
     "database",
-    "mysql"
+    "mysql",
+    "mongo"
   ],
   "author": "Jing Tao Liu",
   "license": "ISC",
